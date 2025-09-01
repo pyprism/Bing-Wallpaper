@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -18,6 +19,9 @@ import (
 
 const bingURL = "https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1"
 
+//go:embed icon/bing.png
+var iconData []byte
+
 type BingResponse struct {
 	Images []struct {
 		URL  string `json:"url"`
@@ -30,10 +34,8 @@ func main() {
 
 	bingApp := app.NewWithID("Bing Wallpaper")
 
-	icon, err := fyne.LoadResourceFromPath("icon/bing.png")
-	if err == nil {
-		bingApp.SetIcon(icon)
-	}
+	icon := fyne.NewStaticResource("bing.png", iconData)
+	bingApp.SetIcon(icon)
 
 	// System tray only works if supported
 	if desk, ok := bingApp.(desktop.App); ok {
