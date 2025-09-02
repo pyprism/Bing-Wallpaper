@@ -41,6 +41,7 @@ func main() {
 	if desk, ok := bingApp.(desktop.App); ok {
 		menu := fyne.NewMenu("Bing Wallpaper",
 			fyne.NewMenuItem("Set New Wallpaper Now", func() { go updateWallpaper() }),
+			fyne.NewMenuItem("Browse Saved Images", func() { go openSavedImagesDir() }),
 			fyne.NewMenuItem("Quit", func() { bingApp.Quit() }),
 		)
 		desk.SetSystemTrayMenu(menu)
@@ -59,6 +60,12 @@ func main() {
 	}()
 
 	bingApp.Run()
+}
+
+func openSavedImagesDir() {
+	usr, _ := user.Current()
+	saveDir := filepath.Join(usr.HomeDir, ".local/share/bing-wallpapers")
+	exec.Command("xdg-open", saveDir).Start()
 }
 
 func updateWallpaper() {
