@@ -1,4 +1,4 @@
-### Bing Wallpaper
+### Bing Wallpaper [![Build and Release](https://github.com/pyprism/Bing-Wallpaper/actions/workflows/release.yml/badge.svg)](https://github.com/pyprism/Bing-Wallpaper/actions/workflows/release.yml)
 
 A simple Go application that automatically sets your Linux desktop wallpaper to the daily Bing image. Supports multiple desktop environments and runs in the system tray.
 
