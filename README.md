@@ -11,7 +11,7 @@ A simple Go application that automatically sets your Linux desktop wallpaper to 
 
 ## Installation
 
-1. **Build or dowmload the binary from the release:**
+1. **Build or dowmload the binary from the [release](https://github.com/pyprism/Bing-Wallpaper/releases):**
    ```sh
    go build -o bing-wallpaper
    ```
