@@ -17,7 +17,7 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 )
 
-const bingURL = "https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1"
+var bingURL = "https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1"
 
 //go:embed icon/bing.png
 var iconData []byte
@@ -28,6 +28,15 @@ type BingResponse struct {
 		Date string `json:"startdate"`
 	} `json:"images"`
 }
+
+var (
+	execCommand      = exec.Command
+	osExecutable     = os.Executable
+	osExit           = os.Exit
+	userCurrent      = user.Current
+	httpGet          = http.Get
+	setWallpaperFunc = setWallpaper
+)
 
 func main() {
 	ensureInstall()
@@ -63,13 +72,13 @@ func main() {
 }
 
 func openSavedImagesDir() {
-	usr, _ := user.Current()
+	usr, _ := userCurrent()
 	saveDir := filepath.Join(usr.HomeDir, ".local/share/bing-wallpapers")
-	exec.Command("xdg-open", saveDir).Start()
+	execCommand("xdg-open", saveDir).Start()
 }
 
 func updateWallpaper() {
-	resp, err := http.Get(bingURL)
+	resp, err := httpGet(bingURL)
 	if err != nil {
 		fmt.Println("Error fetching Bing API:", err)
 		return
@@ -88,7 +97,7 @@ func updateWallpaper() {
 	}
 
 	imgURL := "https://www.bing.com" + data.Images[0].URL
-	usr, _ := user.Current()
+	usr, _ := userCurrent()
 	saveDir := filepath.Join(usr.HomeDir, ".local/share/bing-wallpapers")
 	os.MkdirAll(saveDir, 0755)
 
@@ -96,12 +105,12 @@ func updateWallpaper() {
 
 	// Skip if already exists
 	if _, err := os.Stat(savePath); err == nil {
-		setWallpaper(savePath)
+		setWallpaperFunc(savePath)
 		return
 	}
 
 	// Download image
-	respImg, err := http.Get(imgURL)
+	respImg, err := httpGet(imgURL)
 	if err != nil {
 		fmt.Println("Error downloading image:", err)
 		return
@@ -121,7 +130,7 @@ func updateWallpaper() {
 		return
 	}
 
-	setWallpaper(savePath)
+	setWallpaperFunc(savePath)
 }
 
 func setWallpaper(path string) {
@@ -141,7 +150,7 @@ func setWallpaper(path string) {
 	}
 
 	for _, cmd := range candidates {
-		if err := exec.Command(cmd[0], cmd[1:]...).Run(); err == nil {
+		if err := execCommand(cmd[0], cmd[1:]...).Run(); err == nil {
 			fmt.Println("Wallpaper set using:", cmd[0])
 			return
 		}
@@ -150,11 +159,11 @@ func setWallpaper(path string) {
 }
 
 func ensureInstall() {
-	usr, _ := user.Current()
+	usr, _ := userCurrent()
 	localBin := filepath.Join(usr.HomeDir, ".local/bin")
 	os.MkdirAll(localBin, 0755)
 
-	execPath, _ := os.Executable()
+	execPath, _ := osExecutable()
 	targetPath := filepath.Join(localBin, "bing-wallpaper")
 
 	if execPath != targetPath {
@@ -181,7 +190,7 @@ func ensureInstall() {
 		os.WriteFile(desktopFile, []byte(content), 0644)
 
 		// Relaunch from installed location
-		exec.Command(targetPath).Start()
-		os.Exit(0)
+		execCommand(targetPath).Start()
+		osExit(0)
 	}
 }
