@@ -1,12 +1,14 @@
 name: Build and Release Bing Wallpaper
 
 on:
-  push:
-    tags:
-      - 'v*.*.*'
+  release:
+    types:
+      - created
 
 jobs:
   build:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -29,11 +31,11 @@ jobs:
           mkdir -p dist
           GOOS=linux GOARCH=amd64 go build -o dist/bing-wallpaper
 
-      - name: Upload Release Assets
-        uses: softprops/action-gh-release@v2
+      - name: Upload the binaries
+        uses: svenstaro/upload-release-action@v2
         with:
-          files: |
-            dist/bing-wallpaper
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }}
+          file: ./dist/bing-wallpaper
+          file_glob: true
 
