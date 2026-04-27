@@ -22,6 +22,17 @@ jobs:
       - name: Display the version of go that we have installed
         run: go version
 
+      - name: Install system packages (OpenGL / X11 deps)
+        run: |
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends \
+              libgl1-mesa-dev \
+              xorg-dev \
+              libxcursor-dev \
+              libxrandr-dev \
+              libxinerama-dev \
+              libxi-dev
+
       - name: Display the release tag
         run: echo ${{ github.event.release.tag_name }}
 
