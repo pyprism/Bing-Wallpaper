@@ -3,41 +3,98 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  build:
-
-    runs-on: ubuntu-latest
+  test:
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        go-version: [ '1.26.x' ]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        go-version: ['1.26.x']
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
+
       - name: Setup Go ${{ matrix.go-version }}
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
           cache-dependency-path: go.sum
+
       - name: Display Go version
         run: go version
 
-      - name: Install system packages (OpenGL / X11 deps)
+      # Linux only — Fyne requires OpenGL + X11 headers
+      - name: Install system packages (Linux)
+        if: runner.os == 'Linux'
         run: |
-            sudo apt-get update
-            sudo apt-get install -y --no-install-recommends \
-              libgl1-mesa-dev \
-              xorg-dev \
-              libxcursor-dev \
-              libxrandr-dev \
-              libxinerama-dev \
-              libxi-dev
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgl1-mesa-dev \
+            xorg-dev \
+            libxcursor-dev \
+            libxrandr-dev \
+            libxinerama-dev \
+            libxi-dev
 
       - name: Install dependencies
         run: go get ./...
 
-      - name : Run tests with coverage
+      - name: Run tests with coverage
         run: go test -coverprofile=coverage.txt --race -v ./...
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          flags: ${{ runner.os }}
+
+  build:
+    name: Build ${{ matrix.label }}
+    needs: test
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: linux
+            runner: ubuntu-latest
+            platforms: linux/amd64 linux/arm linux/arm64
+            extra_deps: |
+              sudo apt-get update
+              sudo apt-get install -y --no-install-recommends \
+                libgl1-mesa-dev xorg-dev \
+                libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev \
+                gcc-aarch64-linux-gnu gcc-arm-linux-gnueabihf
+          - label: macos
+            runner: macos-latest
+            platforms: darwin/arm64
+            extra_deps: ''
+          - label: windows
+            runner: windows-latest
+            platforms: windows/amd64
+            extra_deps: ''
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.x'
+          cache-dependency-path: go.sum
+
+      - name: Install system / cross-compile dependencies
+        if: matrix.extra_deps != ''
+        run: ${{ matrix.extra_deps }}
+        shell: bash
+
+      - name: Build release binaries
+        shell: bash
+        run: bash build-executables.sh ${{ github.ref_name }} ${{ matrix.platforms }}
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.label }}
+          path: release/
