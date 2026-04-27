@@ -57,7 +57,11 @@ do
 
     pushd release > /dev/null
     if [ $os = "windows" ]; then
-        zip $archive_name.zip $output_binary
+        if command -v zip &>/dev/null; then
+            zip $archive_name.zip $output_binary
+        else
+            7z a $archive_name.zip $output_binary
+        fi
         rm $output_binary
     else
         chmod a+x $output_binary
