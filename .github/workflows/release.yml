@@ -1,41 +1,40 @@
-name: Build and Release Bing Wallpaper
+name: Build Client Release Binaries
 
 on:
   release:
     types:
       - created
-
 jobs:
   build:
+    name: Build Release Assets
     permissions:
       contents: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version: '1.25'
+          go-version: '1.26'
 
-      - name: Install OpenGL and X11 dependencies
-        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev xorg-dev
+      - name: Display the version of go that we have installed
+        run: go version
 
+      - name: Display the release tag
+        run: echo ${{ github.event.release.tag_name }}
 
-      - name: Run tests
-        run: go test -v ./...
+      - name: Build the executables
+        run: ./build-executables.sh ${{ github.event.release.tag_name }}
 
-      - name: Build Linux binary
-        run: |
-          mkdir -p dist
-          GOOS=linux GOARCH=amd64 go build -o dist/bing-wallpaper
+      - name: List the executables
+        run: ls -l ./release
 
       - name: Upload the binaries
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
-          file: ./dist/bing-wallpaper
+          file: ./release/bing-wallpaper-*
           file_glob: true
-
