@@ -71,12 +71,6 @@ func main() {
 	bingApp.Run()
 }
 
-func openSavedImagesDir() {
-	usr, _ := userCurrent()
-	saveDir := filepath.Join(usr.HomeDir, ".local/share/bing-wallpapers")
-	execCommand("xdg-open", saveDir).Start()
-}
-
 func updateWallpaper() {
 	resp, err := httpGet(bingURL)
 	if err != nil {
@@ -98,7 +92,7 @@ func updateWallpaper() {
 
 	imgURL := "https://www.bing.com" + data.Images[0].URL
 	usr, _ := userCurrent()
-	saveDir := filepath.Join(usr.HomeDir, ".local/share/bing-wallpapers")
+	saveDir := getSaveDir(usr.HomeDir)
 	os.MkdirAll(saveDir, 0755)
 
 	savePath := filepath.Join(saveDir, data.Images[0].Date+".jpg")
@@ -131,66 +125,4 @@ func updateWallpaper() {
 	}
 
 	setWallpaperFunc(savePath)
-}
-
-func setWallpaper(path string) {
-	candidates := [][]string{
-		// GNOME / Cinnamon / MATE
-		{"gsettings", "set", "org.gnome.desktop.background", "picture-uri", "file://" + path},
-		{"gsettings", "set", "org.cinnamon.desktop.background", "picture-uri", "file://" + path},
-		{"gsettings", "set", "org.mate.background", "picture-filename", path},
-		// KDE Plasma
-		{"plasma-apply-wallpaperimage", path},
-		// XFCE
-		{"xfconf-query", "-c", "xfce4-desktop", "-p", "/backdrop/screen0/monitor0/image-path", "-s", path},
-		// LXQt / Openbox (feh)
-		{"feh", "--bg-fill", path},
-		// sway / wayland
-		{"swaymsg", "output", "*", "bg", path, "fill"},
-	}
-
-	for _, cmd := range candidates {
-		if err := execCommand(cmd[0], cmd[1:]...).Run(); err == nil {
-			fmt.Println("Wallpaper set using:", cmd[0])
-			return
-		}
-	}
-	fmt.Println("No suitable wallpaper command found.")
-}
-
-func ensureInstall() {
-	usr, _ := userCurrent()
-	localBin := filepath.Join(usr.HomeDir, ".local/bin")
-	os.MkdirAll(localBin, 0755)
-
-	execPath, _ := osExecutable()
-	targetPath := filepath.Join(localBin, "bing-wallpaper")
-
-	if execPath != targetPath {
-		// Copy binary to ~/.local/bin
-		input, err := os.ReadFile(execPath)
-		if err == nil {
-			os.WriteFile(targetPath, input, 0755)
-			fmt.Println("Installed to", targetPath)
-		}
-
-		// Create autostart entry
-		autoDir := filepath.Join(usr.HomeDir, ".config/autostart")
-		os.MkdirAll(autoDir, 0755)
-		desktopFile := filepath.Join(autoDir, "bing-wallpaper.desktop")
-		content := `[Desktop Entry]
-					Type=Application
-					Exec=` + targetPath + `
-					Hidden=false
-					NoDisplay=false
-					X-GNOME-Autostart-enabled=true
-					Name=Bing Wallpaper
-					Comment=Daily Bing Wallpaper
-					`
-		os.WriteFile(desktopFile, []byte(content), 0644)
-
-		// Relaunch from installed location
-		execCommand(targetPath).Start()
-		osExit(0)
-	}
 }
