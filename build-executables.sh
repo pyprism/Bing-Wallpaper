@@ -47,20 +47,7 @@ do
 
     echo "Building release/$output_binary for $os-$GOARCH..."
 
-    # Pick the right C cross-compiler for Linux ARM targets
-    cross_cc=""
-    if [[ $GOOS == "linux" && $GOARCH == "arm64" ]]; then
-      cross_cc="aarch64-linux-gnu-gcc"
-    elif [[ $GOOS == "linux" && $GOARCH == "arm" ]]; then
-      cross_cc="arm-linux-gnueabihf-gcc"
-    fi
-
-    cc_env=""
-    if [[ -n "$cross_cc" ]]; then
-      cc_env="CC=$cross_cc"
-    fi
-
-    env CGO_ENABLED=1 GOOS=$GOOS GOARCH=$GOARCH $cc_env go build \
+    env CGO_ENABLED=1 GOOS=$GOOS GOARCH=$GOARCH go build \
         -ldflags="-s -w -X main.version=$version" \
       -o release/$output_binary .
     if [ $? -ne 0 ]; then
