@@ -1,0 +1,10 @@
+# .coverageignore
+# Files excluded from test coverage reports.
+# These are entry points, platform-specific OS integrations,
+# or GUI code that cannot be meaningfully unit tested.
+
+main.go
+platform_linux.go
+platform_darwin.go
+platform_windows.go
+
