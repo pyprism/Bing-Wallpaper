@@ -2,21 +2,27 @@
 
 version=$1
 if [[ -z "$version" ]]; then
-  echo "usage: $0 <version>"
+  echo "usage: $0 <version> [platform1 platform2 ...]"
+  echo "  e.g. $0 1.0.0 linux/amd64 linux/arm64"
   exit 1
 fi
 package_name=bing-wallpaper
 binary_name=$package_name
 
-# The full list of the platforms is at: https://golang.org/doc/install/source#environment
-platforms=(
-#"darwin/amd64"
-"darwin/arm64"
-"linux/amd64"
-"linux/arm"
-"linux/arm64"
-"windows/amd64"
+# Default platform list (all supported). Pass extra args to override.
+default_platforms=(
+  "darwin/arm64"
+  "linux/amd64"
+  "linux/arm"
+  "linux/arm64"
+  "windows/amd64"
 )
+
+if [[ $# -gt 1 ]]; then
+  platforms=("${@:2}")
+else
+  platforms=("${default_platforms[@]}")
+fi
 
 rm -rf release/
 mkdir -p release
@@ -40,7 +46,21 @@ do
     archive_name=$package_name'-'$version'-'$os'-'$GOARCH
 
     echo "Building release/$output_binary for $os-$GOARCH..."
-    env GOOS=$GOOS GOARCH=$GOARCH go build \
+
+    # Pick the right C cross-compiler for Linux ARM targets
+    cross_cc=""
+    if [[ $GOOS == "linux" && $GOARCH == "arm64" ]]; then
+      cross_cc="aarch64-linux-gnu-gcc"
+    elif [[ $GOOS == "linux" && $GOARCH == "arm" ]]; then
+      cross_cc="arm-linux-gnueabihf-gcc"
+    fi
+
+    cc_env=""
+    if [[ -n "$cross_cc" ]]; then
+      cc_env="CC=$cross_cc"
+    fi
+
+    env CGO_ENABLED=1 GOOS=$GOOS GOARCH=$GOARCH $cc_env go build \
         -ldflags="-s -w -X main.version=$version" \
       -o release/$output_binary .
     if [ $? -ne 0 ]; then
