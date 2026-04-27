@@ -20,6 +20,17 @@ jobs:
       - name: Display Go version
         run: go version
 
+      - name: Install system packages (OpenGL / X11 deps)
+        run: |
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends \
+              libgl1-mesa-dev \
+              xorg-dev \
+              libxcursor-dev \
+              libxrandr-dev \
+              libxinerama-dev \
+              libxi-dev
+
       - name: Install dependencies
         run: go get ./...
 
