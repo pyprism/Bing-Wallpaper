@@ -15,12 +15,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - label: linux
+          - label: linux-amd64
             runner: ubuntu-latest
-            platforms: linux/amd64 linux/arm linux/arm64
+            platforms: linux/amd64
+
+          - label: linux-arm64
+            runner: ubuntu-24.04-arm   # native ARM64 runner — no cross-compilation
+            platforms: linux/arm64
+
           - label: macos
             runner: macos-latest
             platforms: darwin/arm64
+
           - label: windows
             runner: windows-latest
             platforms: windows/amd64
@@ -47,11 +53,7 @@ jobs:
             libxcursor-dev \
             libxrandr-dev \
             libxinerama-dev \
-            libxi-dev \
-            gcc-aarch64-linux-gnu \
-            libc6-dev-arm64-cross \
-            gcc-arm-linux-gnueabihf \
-            libc6-dev-armhf-cross
+            libxi-dev
 
       - name: Display the release tag
         run: echo ${{ github.event.release.tag_name }}
