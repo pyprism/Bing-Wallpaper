@@ -2,11 +2,32 @@
 
 package main
 
+/*
+#cgo CFLAGS: -x objective-c
+#cgo LDFLAGS: -framework Cocoa
+#import <Cocoa/Cocoa.h>
+
+static void hideDockIcon(void) {
+	@autoreleasepool {
+		[NSApplication sharedApplication];
+		[NSApp setActivationPolicy:NSApplicationActivationPolicyAccessory];
+	}
+}
+*/
+import "C"
+
 import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/go-gl/glfw/v3.3/glfw"
 )
+
+func hideDockIcon() {
+	glfw.InitHint(glfw.CocoaMenubar, glfw.False)
+	C.hideDockIcon()
+}
 
 func getSaveDir(homeDir string) string {
 	return filepath.Join(homeDir, "Library", "Application Support", "bing-wallpapers")

@@ -40,6 +40,7 @@ var (
 
 func main() {
 	ensureInstall()
+	hideDockIcon()
 
 	bingApp := app.NewWithID("Bing Wallpaper")
 

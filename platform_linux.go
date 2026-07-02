@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 )
 
+func hideDockIcon() {}
+
 func getSaveDir(homeDir string) string {
 	return filepath.Join(homeDir, ".local", "share", "bing-wallpapers")
 }

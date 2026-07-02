@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 )
 
+func hideDockIcon() {}
+
 func getSaveDir(homeDir string) string {
 	appData := os.Getenv("APPDATA")
 	if appData == "" {
