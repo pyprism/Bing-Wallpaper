@@ -9,6 +9,7 @@
 #include <QDateTime>
 #include <QIcon>
 #include <QMenu>
+#include <QMessageBox>
 #include <QSettings>
 #include <QSystemTrayIcon>
 #include <QDebug>
@@ -102,6 +103,11 @@ void TrayController::buildMenu()
     startAtLogin->setCheckable(true);
     startAtLogin->setChecked(Installer::isAutostartEnabled());
     connect(startAtLogin, &QAction::toggled, this, &TrayController::toggleStartAtLogin);
+
+    m_menu->addSeparator();
+
+    QAction *about = m_menu->addAction(QStringLiteral("About"));
+    connect(about, &QAction::triggered, this, &TrayController::showAbout);
 
     m_menu->addSeparator();
 
@@ -207,4 +213,14 @@ void TrayController::copyDescription()
 void TrayController::toggleStartAtLogin(bool checked)
 {
     Installer::setAutostartEnabled(checked);
+}
+
+void TrayController::showAbout()
+{
+    QMessageBox::about(nullptr, QStringLiteral("About Bing Wallpaper"),
+        QStringLiteral(
+            "<h3>Bing Wallpaper</h3>"
+            "<p>Sets your desktop wallpaper to the daily Bing image.</p>"
+            "<p><a href=\"https://github.com/pyprism/Bing-Wallpaper\">"
+            "github.com/pyprism/Bing-Wallpaper</a></p>"));
 }

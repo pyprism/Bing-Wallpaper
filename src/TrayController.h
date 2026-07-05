@@ -28,6 +28,7 @@ private slots:
     void browseSavedImages();
     void copyDescription();
     void toggleStartAtLogin(bool checked);
+    void showAbout();
 
 private:
     void buildMenu();
