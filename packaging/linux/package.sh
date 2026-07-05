@@ -41,6 +41,9 @@ NO_STRIP=1 linuxdeploy \
 mv "${APP_NAME}"*.AppImage "${APP_NAME}-${VERSION}-linux-${ARCH}.AppImage" 2>/dev/null || true
 
 echo "Creating tar.gz fallback..."
-tar -C "${BUILD_DIR}" -czf "${APP_NAME}-${VERSION}-linux-${ARCH}.tar.gz" "${APP_NAME}"
+TAR_DIR_NAME="${APP_NAME}-${VERSION}-linux-${ARCH}"
+rm -rf "${BUILD_DIR}/${TAR_DIR_NAME}"
+cp -r "${APPDIR}" "${BUILD_DIR}/${TAR_DIR_NAME}"
+tar -C "${BUILD_DIR}" -czf "${APP_NAME}-${VERSION}-linux-${ARCH}.tar.gz" "${TAR_DIR_NAME}"
 
 echo "Done."
