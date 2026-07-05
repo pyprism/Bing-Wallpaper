@@ -1,6 +1,7 @@
 #include "WallpaperSetter.h"
 
 #include <QDesktopServices>
+#include <QDir>
 #include <QProcess>
 #include <QUrl>
 #include <QDebug>
@@ -56,7 +57,7 @@ bool setWallpaper(const QString &path)
     settings.setValue("WallpaperStyle", wallpaperStyleValue());
     settings.setValue("TileWallpaper", "0");
 
-    const std::wstring wpath = path.toStdWString();
+    const std::wstring wpath = QDir::toNativeSeparators(path).toStdWString();
     if (!SystemParametersInfoW(SPI_SETDESKWALLPAPER, 0, const_cast<wchar_t *>(wpath.c_str()),
                                 SPIF_UPDATEINIFILE | SPIF_SENDCHANGE)) {
         qWarning() << "Error setting wallpaper via SystemParametersInfoW";
