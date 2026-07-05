@@ -36,3 +36,4 @@ ui_*.h
 
 # env file
 .env
+/.qtcreator/
