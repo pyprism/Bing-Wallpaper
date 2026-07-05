@@ -71,6 +71,11 @@ TrayController::TrayController(QObject *parent)
     connect(m_client, &BingClient::errorOccurred, this, &TrayController::onError);
 }
 
+TrayController::~TrayController()
+{
+    delete m_menu;
+}
+
 void TrayController::buildMenu()
 {
     QAction *setNow = m_menu->addAction(QStringLiteral("Set New Wallpaper Now"));
