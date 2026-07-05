@@ -101,7 +101,10 @@ void ensureInstalled()
     Q_UNUSED(execPath);
 
 #elif defined(Q_OS_WIN)
-    const QString installDir = qEnvironmentVariable("LOCALAPPDATA") + "/Programs/bing-wallpaper";
+    QString localAppData = qEnvironmentVariable("LOCALAPPDATA");
+    if (localAppData.isEmpty())
+        localAppData = QDir::homePath() + "/AppData/Local";
+    const QString installDir = localAppData + "/Programs/bing-wallpaper";
     QDir().mkpath(installDir);
     const QString targetPath = installDir + "/bing-wallpaper.exe";
 
