@@ -1,7 +1,9 @@
 #include <QApplication>
 #include <QDateTime>
+#include <QDir>
+#include <QLockFile>
 #include <QSettings>
-#include <QSharedMemory>
+#include <QStandardPaths>
 #include <QTimer>
 
 #include "Installer.h"
@@ -27,10 +29,13 @@ int main(int argc, char *argv[])
     Installer::ensureInstalled();
     Installer::syncAutostart();
 
-    // Single-instance guard: if the segment already exists, another instance
-    // owns it and this process should exit quietly.
-    static QSharedMemory instanceLock(QStringLiteral("com.bing-wallpaper.instance-lock"));
-    if (!instanceLock.create(1)) {
+    // Single-instance guard. QLockFile records the owning PID and discards the
+    // lock itself if that process is no longer running, so a crash doesn't
+    // permanently block future launches the way a leaked QSharedMemory would.
+    const QString lockPath = QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation))
+                                  .filePath(QStringLiteral("bing-wallpaper.lock"));
+    static QLockFile instanceLock(lockPath);
+    if (!instanceLock.tryLock(100)) {
         return 0;
     }
 
