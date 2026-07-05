@@ -1,34 +1,39 @@
-.idea/
-bing-wallpaper
-# If you prefer the allow list template instead of the deny list, see community template:
-# https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
-#
-# Binaries for programs and plugins
+# CMake build output
+build/
+build-*/
+CMakeCache.txt
+CMakeFiles/
+CTestTestfile.cmake
+cmake_install.cmake
+Testing/
+
+# Compiled artifacts
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
+*.o
+*.obj
+*.app/
 
-# Test binary, built with `go test -c`
-*.test
+# Qt generated
+moc_*.cpp
+qrc_*.cpp
+ui_*.h
+*.moc
 
-# Code coverage profiles and other test artifacts
-*.out
-coverage.*
-*.coverprofile
-profile.cov
+# Packaging output
+*.dmg
+*.AppImage
+*-setup.exe
+*.tar.gz
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
-
-# Go workspace file
-go.work
-go.work.sum
+# Editor/IDE
+.idea/
+.vscode/
+.DS_Store
 
 # env file
 .env
-
-# Editor/IDE
-# .idea/
-# .vscode/
+/.qtcreator/

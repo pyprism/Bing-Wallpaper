@@ -1,4 +1,4 @@
-name: Build Client Release Binaries
+name: Build Release Packages
 
 on:
   release:
@@ -15,33 +15,27 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - label: linux-amd64
+          - label: linux-x86_64
             runner: ubuntu-latest
-            platforms: linux/amd64
-
           - label: linux-arm64
             runner: ubuntu-24.04-arm   # native ARM64 runner — no cross-compilation
-            platforms: linux/arm64
-
           - label: macos
-            runner: macos-latest
-            platforms: darwin/arm64
-
+            runner: macos-14
           - label: windows
             runner: windows-latest
-            platforms: windows/amd64
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - name: Display the release tag
+        run: echo ${{ github.event.release.tag_name }}
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
         with:
-          go-version: '1.26'
-
-      - name: Display the version of go that we have installed
-        run: go version
+          version: '6.8.*'
+          cache: true
 
       - name: Install system packages (Linux)
         if: runner.os == 'Linux'
@@ -49,27 +43,68 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             libgl1-mesa-dev \
-            xorg-dev \
-            libxcursor-dev \
-            libxrandr-dev \
-            libxinerama-dev \
-            libxi-dev
+            libxkbcommon-x11-0 \
+            libxcb-icccm4 \
+            libxcb-image0 \
+            libxcb-keysyms1 \
+            libxcb-randr0 \
+            libxcb-render-util0 \
+            libxcb-xinerama0 \
+            libxcb-xfixes0 \
+            libxcb-shape0 \
+            libxcb-cursor0 \
+            fuse \
+            libfuse2
 
-      - name: Display the release tag
-        run: echo ${{ github.event.release.tag_name }}
+      - name: Configure (macOS universal)
+        if: runner.os == 'macOS'
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
 
-      - name: Build the executables
+      - name: Configure
+        if: runner.os != 'macOS'
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Package (Linux → AppImage)
+        if: runner.os == 'Linux'
         shell: bash
-        run: bash build-executables.sh ${{ github.event.release.tag_name }} ${{ matrix.platforms }}
+        run: |
+          curl -L -o /tmp/linuxdeploy https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-$(uname -m).AppImage
+          curl -L -o /tmp/linuxdeploy-plugin-qt https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-$(uname -m).AppImage
+          chmod +x /tmp/linuxdeploy /tmp/linuxdeploy-plugin-qt
+          export PATH="/tmp:$PATH"
+          bash packaging/linux/package.sh build "${{ github.event.release.tag_name }}"
 
-      - name: List the executables
+      - name: Package (macOS → dmg)
+        if: runner.os == 'macOS'
         shell: bash
-        run: ls -l ./release
+        run: bash packaging/macos/package.sh build "${{ github.event.release.tag_name }}"
 
-      - name: Upload the binaries
+      - name: Deploy Qt (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          mkdir build\windeploy
+          copy build\Release\bing-wallpaper.exe build\windeploy\
+          windeployqt --release build\windeploy\bing-wallpaper.exe
+
+      - name: Package (Windows → Inno Setup installer)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install innosetup -y
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" packaging\windows\installer.iss /DAppVersion=${{ github.event.release.tag_name }} /DSourceDir=build\windeploy
+
+      - name: List packaged artifacts
+        shell: bash
+        run: ls -l *.dmg *.AppImage *.tar.gz *.exe 2>/dev/null || true
+
+      - name: Upload release assets
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
-          file: ./release/bing-wallpaper-*
+          file: bing-wallpaper-*
           file_glob: true

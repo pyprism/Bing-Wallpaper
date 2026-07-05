@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Bing Wallpaper
+Comment=Daily Bing wallpaper, tray-only
+Exec=bing-wallpaper
+Icon=bing-wallpaper
+Categories=Utility;
+Terminal=false
+NoDisplay=true
