@@ -13,7 +13,7 @@ system tray — no dock icon, no taskbar entry, no window.
 - Tray menu: Set New Wallpaper Now, Browse Saved Images, Copy Description, Previous
   Wallpapers (last 8 days), Market, Refresh Interval, Start at Login, Quit
 - Desktop notification when the wallpaper changes
-- Installs itself and can autostart on login for all platforms (toggle from the tray menu)
+- Installs via native packages and can autostart on login for all platforms (toggle from the tray menu)
 - No Dock icon (macOS `LSUIElement`), no taskbar button (Windows/Linux), tray-only everywhere
 
 ## Installation
@@ -51,9 +51,8 @@ not a sign of a broken download.
 3. A tray icon requires a `StatusNotifierItem`/AppIndicator host — most desktops (GNOME
    with an extension, KDE, XFCE, Cinnamon, MATE) provide one out of the box.
 
-On first launch the app installs itself to a standard per-OS location and registers
-autostart (see table below) — this can be turned off later from the tray menu's
-**Start at Login** checkbox.
+On first launch the app registers autostart (see table below) — this can be turned
+off later from the tray menu's **Start at Login** checkbox.
 
 ## Platform Install Locations
 
@@ -61,7 +60,7 @@ autostart (see table below) — this can be turned off later from the tray menu'
 |----------|--------|-----------|
 | Linux    | `~/.local/bin/bing-wallpaper` | `~/.config/autostart/bing-wallpaper.desktop` |
 | macOS    | wherever the `.app` is placed (e.g. `/Applications`) | `~/Library/LaunchAgents/com.bing-wallpaper.plist` |
-| Windows  | `%LOCALAPPDATA%\Programs\bing-wallpaper\bing-wallpaper.exe` | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` |
+| Windows  | installer directory, normally `%ProgramFiles%\bing-wallpaper\bing-wallpaper.exe` | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` |
 
 ## Uninstalling
 
@@ -78,7 +77,7 @@ rm -f ~/Library/Preferences/com.bing-wallpaper.BingWallpaper.plist  # settings, 
 
 ### Windows
 ```powershell
-Remove-Item -Recurse -Force "$env:LOCALAPPDATA\Programs\bing-wallpaper"
+# Prefer Windows Settings > Apps > Bing Wallpaper > Uninstall.
 Remove-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name BingWallpaper -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force "$env:APPDATA\bing-wallpapers"                          # cached wallpapers, optional
 Remove-Item -Recurse -Force "HKCU:\Software\bing-wallpaper" -ErrorAction SilentlyContinue  # settings, optional
@@ -153,8 +152,20 @@ Scripts in `packaging/` turn a Release build into a distributable package:
 ```sh
 packaging/macos/package.sh   build <version>   # -> bing-wallpaper-<version>-macos.dmg
 packaging/linux/package.sh   build <version>   # -> AppImage + .tar.gz (needs linuxdeploy + linuxdeploy-plugin-qt on PATH)
-# Windows: windeployqt into build\windeploy, then run ISCC on packaging\windows\installer.iss
 ```
+
+Windows packaging needs a deployed Qt runtime tree before running Inno Setup:
+
+```powershell
+Remove-Item -Recurse -Force build\windeploy -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Force build\windeploy | Out-Null
+Copy-Item build\Release\bing-wallpaper.exe build\windeploy\
+windeployqt --release --no-translations --dir build\windeploy build\windeploy\bing-wallpaper.exe
+ISCC packaging\windows\installer.iss /DAppVersion=1.0.0 /DSourceDir=build\windeploy
+```
+
+The deployed tree must contain `platforms\qwindows.dll` beside the Qt DLLs. A
+`platform\qwindows.dll` directory will not be found by Qt.
 
 None of these are code-signed — see the Gatekeeper/SmartScreen notes above.
 
