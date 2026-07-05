@@ -88,7 +88,7 @@ jobs:
         run: |
           mkdir build\windeploy
           copy build\Release\bing-wallpaper.exe build\windeploy\
-          windeployqt --release build\windeploy\bing-wallpaper.exe
+          windeployqt --release --compiler-runtime build\windeploy\bing-wallpaper.exe
 
       - name: Package (Windows → Inno Setup installer)
         if: runner.os == 'Windows'
