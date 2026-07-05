@@ -107,10 +107,12 @@ void ensureInstalled()
 
     if (QDir::toNativeSeparators(execPath).compare(QDir::toNativeSeparators(targetPath), Qt::CaseInsensitive) != 0) {
         QFile::remove(targetPath);
-        if (QFile::copy(execPath, targetPath))
+        if (QFile::copy(execPath, targetPath)) {
             qInfo() << "Installed to" << targetPath;
-        QProcess::startDetached(targetPath, {});
-        std::exit(0);
+            QProcess::startDetached(targetPath, {});
+            std::exit(0);
+        }
+        qWarning() << "Failed to install to" << targetPath << "- continuing from" << execPath;
     }
 
 #else
@@ -124,9 +126,10 @@ void ensureInstalled()
             QFile::setPermissions(targetPath,
                 QFile::permissions(targetPath) | QFileDevice::ExeOwner | QFileDevice::ExeGroup | QFileDevice::ExeOther);
             qInfo() << "Installed to" << targetPath;
+            QProcess::startDetached(targetPath, {});
+            std::exit(0);
         }
-        QProcess::startDetached(targetPath, {});
-        std::exit(0);
+        qWarning() << "Failed to install to" << targetPath << "- continuing from" << execPath;
     }
 #endif
 }
