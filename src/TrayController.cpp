@@ -118,7 +118,7 @@ void TrayController::populateMarketMenu(QMenu *menu)
 
     for (const auto &opt : kMarkets) {
         const QString code = QString::fromLatin1(opt.code);
-        QAction *action = menu->addAction(QStringLiteral("%1 (%2)").arg(opt.label, code));
+        QAction *action = menu->addAction(QStringLiteral("%1 (%2)").arg(QString::fromUtf8(opt.label), code));
         action->setCheckable(true);
         action->setChecked(current == code);
         group->addAction(action);
