@@ -101,22 +101,10 @@ void ensureInstalled()
     Q_UNUSED(execPath);
 
 #elif defined(Q_OS_WIN)
-    QString localAppData = qEnvironmentVariable("LOCALAPPDATA");
-    if (localAppData.isEmpty())
-        localAppData = QDir::homePath() + "/AppData/Local";
-    const QString installDir = localAppData + "/Programs/bing-wallpaper";
-    QDir().mkpath(installDir);
-    const QString targetPath = installDir + "/bing-wallpaper.exe";
-
-    if (QDir::toNativeSeparators(execPath).compare(QDir::toNativeSeparators(targetPath), Qt::CaseInsensitive) != 0) {
-        QFile::remove(targetPath);
-        if (QFile::copy(execPath, targetPath)) {
-            qInfo() << "Installed to" << targetPath;
-            QProcess::startDetached(targetPath, {});
-            std::exit(0);
-        }
-        qWarning() << "Failed to install to" << targetPath << "- continuing from" << execPath;
-    }
+    // Windows packages are installed by Inno Setup. A Qt deployment cannot be
+    // self-copied as a single executable because the adjacent Qt DLLs and
+    // plugins, especially platforms/qwindows.dll, must move with it.
+    Q_UNUSED(execPath);
 
 #else
     const QString localBin = QDir::homePath() + "/.local/bin";
