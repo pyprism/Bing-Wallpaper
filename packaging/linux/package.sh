@@ -10,6 +10,12 @@ APP_NAME="bing-wallpaper"
 BINARY="${BUILD_DIR}/${APP_NAME}"
 APPDIR="${BUILD_DIR}/AppDir"
 
+case "$(uname -m)" in
+    x86_64) ARCH="x86_64" ;;
+    aarch64|arm64) ARCH="arm64" ;;
+    *) ARCH="$(uname -m)" ;;
+esac
+
 if [ ! -x "${BINARY}" ]; then
     echo "error: ${BINARY} not found — build first (cmake --build ${BUILD_DIR})" >&2
     exit 1
@@ -32,9 +38,9 @@ NO_STRIP=1 linuxdeploy \
     --icon-file "icon/bing.png" \
     --output appimage
 
-mv "${APP_NAME}"*.AppImage "${APP_NAME}-${VERSION}-linux-x86_64.AppImage" 2>/dev/null || true
+mv "${APP_NAME}"*.AppImage "${APP_NAME}-${VERSION}-linux-${ARCH}.AppImage" 2>/dev/null || true
 
 echo "Creating tar.gz fallback..."
-tar -C "${BUILD_DIR}" -czf "${APP_NAME}-${VERSION}-linux-x86_64.tar.gz" "${APP_NAME}"
+tar -C "${BUILD_DIR}" -czf "${APP_NAME}-${VERSION}-linux-${ARCH}.tar.gz" "${APP_NAME}"
 
 echo "Done."
