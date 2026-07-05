@@ -160,7 +160,7 @@ void TrayController::onWallpaperReady(const QString &path, const QString &copyri
     m_lastCopyright = copyright;
 
     QSettings settings;
-    settings.setValue("lastUpdate", QDateTime::currentDateTimeUtc());
+    settings.setValue("lastUpdate", QDateTime::currentSecsSinceEpoch());
 
     if (m_trayIcon->supportsMessages()) {
         m_trayIcon->showMessage(QStringLiteral("Bing Wallpaper"),

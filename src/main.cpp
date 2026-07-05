@@ -51,8 +51,9 @@ int main(int argc, char *argv[])
     QObject::connect(&dueCheckTimer, &QTimer::timeout, &tray, [&tray]() {
         QSettings settings;
         const qint64 intervalSecs = settings.value("refreshIntervalHours", 5).toInt() * 3600LL;
-        const QDateTime last = settings.value("lastUpdate").toDateTime();
-        if (!last.isValid() || last.secsTo(QDateTime::currentDateTimeUtc()) >= intervalSecs) {
+        const qint64 lastEpoch = settings.value("lastUpdate", 0).toLongLong();
+        const qint64 nowEpoch = QDateTime::currentSecsSinceEpoch();
+        if (lastEpoch == 0 || nowEpoch - lastEpoch >= intervalSecs) {
             tray.triggerUpdate();
         }
     });
