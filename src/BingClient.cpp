@@ -29,10 +29,8 @@ BingClient::BingClient(QObject *parent)
     m_manager->setTransferTimeout(30000);
 }
 
-QString BingClient::apiUrl(int n) const
+QString BingClient::apiUrl(int n, const QString &market)
 {
-    QSettings settings;
-    const QString market = settings.value("market", "en-US").toString();
     return QStringLiteral("%1&n=%2&mkt=%3").arg(kBingApiBase).arg(n).arg(market);
 }
 
@@ -124,10 +122,8 @@ QString BingClient::fileBaseName(const QString &date, const QString &market, con
     return QStringLiteral("%1_%2_%3").arg(date, sanitizeForFilename(market), safeId);
 }
 
-QString BingClient::expectedPath(const ImageInfo &info)
+QString BingClient::expectedPath(const ImageInfo &info, const QString &market)
 {
-    QSettings settings;
-    const QString market = settings.value("market", "en-US").toString();
     const QString base = fileBaseName(info.date, market, imageId(info.url));
     return saveDir() + "/" + base + ".jpg";
 }
@@ -175,15 +171,27 @@ bool BingClient::shouldApply(const QString &lastAppliedDate, const QString &fetc
 
 void BingClient::fetchAndUpdate(bool manual)
 {
-    QNetworkRequest request{QUrl(apiUrl(1))};
+    // Captured once, here, and carried on the reply — not re-read from
+    // QSettings when the reply completes. Otherwise switching Market while
+    // this request is still in flight (market changes themselves trigger a
+    // fetch — see TrayController's market menu) can attach the *new*
+    // market's name to the *old* request's response: the old market's image
+    // gets saved/applied under the new market's filename and settings key.
+    QSettings settings;
+    const QString market = settings.value("market", "en-US").toString();
+
+    QNetworkRequest request{QUrl(apiUrl(1, market))};
     QNetworkReply *reply = m_manager->get(request);
     reply->setProperty("manual", manual);
+    reply->setProperty("market", market);
     connect(reply, &QNetworkReply::finished, this, &BingClient::onApiReply);
 }
 
 void BingClient::fetchArchive(int n)
 {
-    QNetworkRequest request{QUrl(apiUrl(n))};
+    QSettings settings;
+    const QString market = settings.value("market", "en-US").toString();
+    QNetworkRequest request{QUrl(apiUrl(n, market))};
     QNetworkReply *reply = m_manager->get(request);
     connect(reply, &QNetworkReply::finished, this, &BingClient::onArchiveReply);
 }
@@ -195,6 +203,7 @@ void BingClient::onApiReply()
         return;
     reply->deleteLater();
     const bool manual = reply->property("manual").toBool();
+    const QString market = reply->property("market").toString();
 
     if (reply->error() != QNetworkReply::NoError) {
         emit errorOccurred(QStringLiteral("Error fetching Bing API: %1").arg(reply->errorString()), manual);
@@ -207,7 +216,7 @@ void BingClient::onApiReply()
         return;
     }
 
-    useImageInternal(images.first(), /*gated=*/true, manual);
+    useImageInternal(images.first(), /*gated=*/true, manual, market);
 }
 
 void BingClient::onArchiveReply()
@@ -229,10 +238,15 @@ void BingClient::onArchiveReply()
 
 void BingClient::useImage(const ImageInfo &info)
 {
-    useImageInternal(info, /*gated=*/false, /*manual=*/false);
+    // An explicit pick (archive submenu / Gallery) reflects the user's
+    // *current* choice of market — there's no earlier request whose market
+    // this could race against, so reading the live setting here is correct.
+    QSettings settings;
+    const QString market = settings.value("market", "en-US").toString();
+    useImageInternal(info, /*gated=*/false, /*manual=*/false, market);
 }
 
-void BingClient::useImageInternal(const ImageInfo &info, bool gated, bool manual)
+void BingClient::useImageInternal(const ImageInfo &info, bool gated, bool manual, const QString &market)
 {
     if (gated) {
         // Record the fetch happened even if it turns out to be skipped or
@@ -240,7 +254,7 @@ void BingClient::useImageInternal(const ImageInfo &info, bool gated, bool manual
         emit fetchCompleted(info.date);
     }
 
-    const QString savePath = expectedPath(info);
+    const QString savePath = expectedPath(info, market);
 
     if (gated && !manual && WallpaperLibrary::isDeleted(QFileInfo(savePath).completeBaseName())) {
         // The user deleted this exact image from the Gallery; an automatic
@@ -253,15 +267,15 @@ void BingClient::useImageInternal(const ImageInfo &info, bool gated, bool manual
             const QString sidecar = readSidecarCopyright(savePath);
             return sidecar.isEmpty() ? info.copyright : sidecar;
         }();
-        emit wallpaperReady(savePath, copyright, info.date, gated, manual);
+        emit wallpaperReady(savePath, copyright, info.date, market, gated, manual);
         return;
     }
 
-    startDownload(info, savePath, gated, manual, /*isFallbackAttempt=*/false);
+    startDownload(info, savePath, market, gated, manual, /*isFallbackAttempt=*/false);
 }
 
-void BingClient::startDownload(const ImageInfo &info, const QString &savePath, bool gated, bool manual,
-                                bool isFallbackAttempt)
+void BingClient::startDownload(const ImageInfo &info, const QString &savePath, const QString &market,
+                                bool gated, bool manual, bool isFallbackAttempt)
 {
     if (m_inFlightSavePaths.contains(savePath))
         return;
@@ -277,6 +291,7 @@ void BingClient::startDownload(const ImageInfo &info, const QString &savePath, b
     reply->setProperty("copyright", info.copyright);
     reply->setProperty("date", info.date);
     reply->setProperty("sourceUrl", info.url);
+    reply->setProperty("market", market);
     reply->setProperty("gated", gated);
     reply->setProperty("manual", manual);
     reply->setProperty("isFallbackAttempt", isFallbackAttempt);
@@ -294,6 +309,10 @@ void BingClient::onImageReply()
     const QString copyright = reply->property("copyright").toString();
     const QString date = reply->property("date").toString();
     const QString sourceUrl = reply->property("sourceUrl").toString();
+    // Whatever market startDownload() was actually called with — not
+    // re-read from QSettings here, which could by now reflect a market the
+    // user switched to *after* this specific request was sent.
+    const QString market = reply->property("market").toString();
     const bool gated = reply->property("gated").toBool();
     const bool manual = reply->property("manual").toBool();
     const bool wasFallbackAttempt = reply->property("isFallbackAttempt").toBool();
@@ -308,16 +327,13 @@ void BingClient::onImageReply()
     // pops a warning bubble.
     const bool userInitiated = !gated || manual;
 
-    QSettings settings;
-    QString market = settings.value("market", "en-US").toString();
-
     if (!networkOk || !httpOk) {
         m_inFlightSavePaths.remove(savePath);
         if (!wasFallbackAttempt) {
             // The UHD variant may not exist for this image/market — retry
             // once with Bing's own resolution before giving up.
             ImageInfo info{sourceUrl, date, copyright};
-            startDownload(info, savePath, gated, manual, /*isFallbackAttempt=*/true);
+            startDownload(info, savePath, market, gated, manual, /*isFallbackAttempt=*/true);
             return;
         }
         emit errorOccurred(QStringLiteral("Error downloading image (HTTP %1): %2")
@@ -327,19 +343,21 @@ void BingClient::onImageReply()
 
     const QByteArray data = reply->readAll();
 
-    // Validate the bytes actually decode as an image before caching them
-    // forever — a truncated download or an HTML error page must not become
-    // a permanently-stuck "already cached" file.
+    // Fully decode (not just QImageReader::canRead(), which only recognizes
+    // the format from a header/magic-bytes peek and can say yes for a
+    // response truncated partway through the actual pixel data) before
+    // caching the bytes forever — a truncated download or an HTML error
+    // page must not become a permanently-stuck "already cached" file.
     QBuffer buffer;
     buffer.setData(data);
     buffer.open(QIODevice::ReadOnly);
-    const bool looksLikeImage = QImageReader(&buffer).canRead();
+    const bool decodedOk = !QImageReader(&buffer).read().isNull();
 
-    if (!looksLikeImage) {
+    if (!decodedOk) {
         m_inFlightSavePaths.remove(savePath);
         if (!wasFallbackAttempt) {
             ImageInfo info{sourceUrl, date, copyright};
-            startDownload(info, savePath, gated, manual, /*isFallbackAttempt=*/true);
+            startDownload(info, savePath, market, gated, manual, /*isFallbackAttempt=*/true);
             return;
         }
         emit errorOccurred(QStringLiteral("Downloaded data for %1 is not a valid image").arg(savePath),
@@ -369,5 +387,5 @@ void BingClient::onImageReply()
     writeSidecar(savePath, date, market, copyright, sourceUrl);
     m_inFlightSavePaths.remove(savePath);
 
-    emit wallpaperReady(savePath, copyright, date, gated, manual);
+    emit wallpaperReady(savePath, copyright, date, market, gated, manual);
 }
