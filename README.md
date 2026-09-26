@@ -10,8 +10,10 @@ system tray — no dock icon, no taskbar entry, no window.
 - **Linux**: sets wallpaper for GNOME, KDE Plasma, XFCE, MATE, Cinnamon, LXQt/Openbox (`feh`), sway
 - **macOS**: sets wallpaper via AppleScript (System Events / Finder fallback)
 - **Windows**: sets wallpaper via `SystemParametersInfoW` (native WinAPI)
-- Tray menu: Set New Wallpaper Now, Browse Saved Images, Copy Description, Previous
-  Wallpapers (last 8 days), Market, Refresh Interval, Start at Login, Quit
+- **Gallery window** — browse every saved wallpaper as thumbnails, set any of them as the
+  current wallpaper, delete one or several (moved to the Trash), copy its description
+- Tray menu: Refresh Now, Open Gallery…, Copy Description, Previous Wallpapers (last 8 days),
+  Market, Refresh Interval, Keep Wallpapers (retention), Start at Login, About, Quit
 - Desktop notification when the wallpaper changes
 - Installs via native packages and can autostart on login for all platforms (toggle from the tray menu)
 - No Dock icon (macOS `LSUIElement`), no taskbar button (Windows/Linux), tray-only everywhere
@@ -102,19 +104,31 @@ rm -rf ~/.config/bing-wallpaper                         # settings, optional
 | macOS    | `~/Library/Application Support/bing-wallpapers/` |
 | Windows  | `%APPDATA%\bing-wallpapers\` |
 
+Each image is saved as `<date>_<market>_<id>.jpg` alongside a `<same-name>.json` sidecar
+holding its title/copyright/market, so the Gallery can show every image's caption without
+re-fetching it. Older `<date>.jpg` files from before this naming scheme are still read fine.
+
 ## Usage
 
 The app runs in the background with no visible window — everything is driven from the
 system tray icon's menu:
 
-- **Set New Wallpaper Now** — fetch and apply today's image immediately
-- **Browse Saved Images** — open the cache folder in your file manager
+- **Refresh Now** — fetch and apply today's image immediately
+- **Open Gallery…** — browse every saved wallpaper as thumbnails; set any one as the current
+  wallpaper, delete it (or several at once — moved to the Trash), copy its description, or
+  reveal the save folder. Also opens if you launch the app again while it's already running,
+  or on desktops without a system tray.
 - **Copy Description** — copy the current image's caption/photo credit to the clipboard
 - **Previous Wallpapers** — pick from the last 8 days
 - **Market** — which Bing regional edition to fetch from (`en-US`, `ja-JP`, `de-DE`, …)
 - **Refresh Interval** — how often to check for a new wallpaper (1h–24h, default 5h)
+- **Keep Wallpapers** — retention: forever (default), or auto-prune after 30/90/180 days
 - **Start at Login** — toggle autostart
 - **Quit**
+
+A manual pick (Previous Wallpapers or the Gallery) always sticks — the next automatic
+refresh only replaces the wallpaper once an actually-newer image is published; it won't
+silently revert your choice.
 
 ## Building Requirements
 
