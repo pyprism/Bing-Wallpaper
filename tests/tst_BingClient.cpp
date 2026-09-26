@@ -152,7 +152,7 @@ void TestBingClient::expectedPathRespectsDirOverride()
     BingClient::ImageInfo info;
     info.url = QStringLiteral("/th?id=OHR.Test_EN-US123_1920x1080.jpg");
     info.date = QStringLiteral("20260704");
-    const QString path = BingClient::expectedPath(info);
+    const QString path = BingClient::expectedPath(info, QStringLiteral("en-US"));
     QVERIFY(path.startsWith(dir.path()));
     QVERIFY(path.endsWith(QStringLiteral(".jpg")));
 

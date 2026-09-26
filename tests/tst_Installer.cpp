@@ -14,6 +14,10 @@ private slots:
     void isUnderApplicationsFolder_rejectsVolumesAndDownloads();
     void quotedRegistryPath_wrapsInQuotes();
     void quotedRegistryPath_doesNotDoubleWrap();
+    void quoteExecForDesktopEntry_leavesPlainPathAlone();
+    void quoteExecForDesktopEntry_quotesPathWithSpace();
+    void quoteExecForDesktopEntry_escapesEmbeddedQuoteAndBackslash();
+    void quoteExecForDesktopEntry_escapesDollarSign();
 };
 
 void TestInstaller::xmlEscapeEscapesReservedCharacters()
@@ -68,6 +72,36 @@ void TestInstaller::quotedRegistryPath_doesNotDoubleWrap()
     // outside Windows) can't change the comparison depending on host OS.
     const QString alreadyQuoted = QStringLiteral("\"C:\\already\\quoted.exe\"");
     QCOMPARE(Installer::quotedRegistryPath(alreadyQuoted), alreadyQuoted);
+}
+
+void TestInstaller::quoteExecForDesktopEntry_leavesPlainPathAlone()
+{
+    const QString in = QStringLiteral("/home/user/.local/bin/bing-wallpaper");
+    QCOMPARE(Installer::quoteExecForDesktopEntry(in), in);
+}
+
+void TestInstaller::quoteExecForDesktopEntry_quotesPathWithSpace()
+{
+    const QString in = QStringLiteral("/home/user/Downloads/Bing Wallpaper-1.0.0.AppImage");
+    const QString out = Installer::quoteExecForDesktopEntry(in);
+    QVERIFY(out.startsWith(QLatin1Char('"')));
+    QVERIFY(out.endsWith(QLatin1Char('"')));
+    QVERIFY(out.contains(QStringLiteral("Bing Wallpaper")));
+}
+
+void TestInstaller::quoteExecForDesktopEntry_escapesEmbeddedQuoteAndBackslash()
+{
+    const QString in = QStringLiteral("/home/user/weird \"name\" \\ dir/app");
+    const QString out = Installer::quoteExecForDesktopEntry(in);
+    QVERIFY(out.contains(QStringLiteral("\\\"")));
+    QVERIFY(out.contains(QStringLiteral("\\\\")));
+}
+
+void TestInstaller::quoteExecForDesktopEntry_escapesDollarSign()
+{
+    const QString in = QStringLiteral("/home/user/weird$dir with space/app");
+    const QString out = Installer::quoteExecForDesktopEntry(in);
+    QVERIFY(out.contains(QStringLiteral("\\$")));
 }
 
 QTEST_APPLESS_MAIN(TestInstaller)
