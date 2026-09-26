@@ -29,7 +29,7 @@ public slots:
 
 private slots:
     void onWallpaperReady(const QString &path, const QString &copyright, const QString &date,
-                           bool gated, bool manual);
+                           const QString &market, bool gated, bool manual);
     void onFetchCompleted(const QString &date);
     void onArchiveReady(const QList<BingClient::ImageInfo> &images);
     void onError(const QString &message, bool userInitiated);

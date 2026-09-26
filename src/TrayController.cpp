@@ -296,7 +296,7 @@ void TrayController::onFetchCompleted(const QString &)
 }
 
 void TrayController::onWallpaperReady(const QString &path, const QString &copyright, const QString &date,
-                                       bool gated, bool manual)
+                                       const QString &market, bool gated, bool manual)
 {
     QSettings settings;
 
@@ -315,7 +315,13 @@ void TrayController::onWallpaperReady(const QString &path, const QString &copyri
         return;
     }
 
-    const QString market = settings.value("market", "en-US").toString();
+    // `market` here is the one this specific fetch was actually made for
+    // (see BingClient::fetchAndUpdate/onImageReply) — not re-read from the
+    // live setting, which could already reflect a market the user switched
+    // to after this fetch started. That distinction matters exactly for
+    // this key: using the live setting here could record today's date as
+    // "auto-applied" under the *new* market from an image that was actually
+    // fetched (and named/saved) under the *old* one.
     const QString key = QStringLiteral("lastAutoAppliedDate/%1").arg(market);
     const QString lastAppliedDate = settings.value(key).toString();
 
@@ -349,7 +355,12 @@ void TrayController::onArchiveReady(const QList<BingClient::ImageInfo> &images)
     m_archiveCache = images;
     m_archiveCacheSecs = QDateTime::currentSecsSinceEpoch();
 
-    const QString currentPath = QSettings().value("currentWallpaperPath").toString();
+    QSettings settings;
+    const QString currentPath = settings.value("currentWallpaperPath").toString();
+    // The current setting is the right thing here (unlike onWallpaperReady's
+    // gated branch above): this is just "does this archive entry match
+    // what's on screen right now", not tied to any specific in-flight fetch.
+    const QString currentMarket = settings.value("market", "en-US").toString();
 
     m_archiveMenu->clear();
     for (const BingClient::ImageInfo &info : images) {
@@ -357,7 +368,7 @@ void TrayController::onArchiveReady(const QList<BingClient::ImageInfo> &images)
         if (label.size() > 60)
             label = label.left(57) + QStringLiteral("...");
         QAction *action = m_archiveMenu->addAction(label);
-        if (BingClient::expectedPath(info) == currentPath) {
+        if (BingClient::expectedPath(info, currentMarket) == currentPath) {
             action->setCheckable(true);
             action->setChecked(true);
         }
