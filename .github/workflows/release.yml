@@ -58,11 +58,21 @@ jobs:
 
       - name: Configure (macOS universal)
         if: runner.os == 'macOS'
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
+        shell: bash
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+            -DAPP_VERSION_STRING="${{ github.event.release.tag_name }}"
 
       - name: Configure
         if: runner.os != 'macOS'
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+        # windows-latest defaults to pwsh, which doesn't treat a trailing
+        # `\` as a line continuation the way bash does — without an explicit
+        # shell, the `-DAPP_VERSION_STRING=...` line would run as its own
+        # (invalid) command and fail the step.
+        shell: bash
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
+            -DAPP_VERSION_STRING="${{ github.event.release.tag_name }}"
 
       - name: Build
         run: cmake --build build --config Release
