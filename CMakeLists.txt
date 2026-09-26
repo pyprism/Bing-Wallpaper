@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(bing-wallpaper LANGUAGES CXX)
+project(bing-wallpaper LANGUAGES CXX VERSION 1.0.0)
 
 if(WIN32)
     enable_language(RC)
@@ -18,6 +18,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
+# Source files here are UTF-8 and contain literal non-ASCII characters (©,
+# …, —, ·) inside string literals (e.g. BingClient.cpp's copyright-mark
+# split, "Open Gallery…"). Clang/GCC read source as UTF-8 by default; MSVC
+# without a BOM reads it in the system code page (1252 on GitHub's Windows
+# runners) unless told otherwise, silently mangling every one of those
+# literals. This is harmless where Qt's own build already passes it.
+add_compile_options($<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
+
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network)
 
 set(SOURCES
@@ -26,6 +34,8 @@ set(SOURCES
     src/WallpaperSetter.cpp
     src/TrayController.cpp
     src/Installer.cpp
+    src/WallpaperLibrary.cpp
+    src/GalleryWindow.cpp
 )
 
 set(HEADERS
@@ -33,6 +43,8 @@ set(HEADERS
     src/WallpaperSetter.h
     src/TrayController.h
     src/Installer.h
+    src/WallpaperLibrary.h
+    src/GalleryWindow.h
 )
 
 if(APPLE)
@@ -88,6 +100,21 @@ target_link_libraries(bing-wallpaper PRIVATE
     Qt6::Network
 )
 
+# Defaults to the project() version above for a plain dev build; the release
+# workflow overrides it with the actual release tag:
+#   cmake -S . -B build -DAPP_VERSION_STRING=1.2.3 ...
+# Release tags in this repo look like "v1.2.3" (see packaging/*/package.sh
+# and installer.iss, which keep the "v" in filenames/AppVersion on purpose);
+# strip a leading v/V here so this one value can *also* feed
+# MACOSX_BUNDLE_SHORT_VERSION_STRING/MACOSX_BUNDLE_BUNDLE_VERSION below
+# (which Apple expects as a plain dotted number) and the About dialog (which
+# prepends its own "v" — "v1.2.3", not "vv1.2.3").
+if(NOT DEFINED APP_VERSION_STRING)
+    set(APP_VERSION_STRING "${PROJECT_VERSION}")
+endif()
+string(REGEX REPLACE "^[vV]" "" APP_VERSION_STRING "${APP_VERSION_STRING}")
+target_compile_definitions(bing-wallpaper PRIVATE APP_VERSION="${APP_VERSION_STRING}")
+
 if(WIN32)
     target_link_libraries(bing-wallpaper PRIVATE user32)
 endif()
@@ -98,6 +125,8 @@ if(APPLE)
         MACOSX_BUNDLE_GUI_IDENTIFIER "com.bing-wallpaper"
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/packaging/macos/Info.plist.in"
         MACOSX_BUNDLE_ICON_FILE "bing.icns"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "${APP_VERSION_STRING}"
+        MACOSX_BUNDLE_BUNDLE_VERSION "${APP_VERSION_STRING}"
     )
 endif()
 
