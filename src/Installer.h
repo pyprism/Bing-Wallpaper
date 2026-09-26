@@ -22,4 +22,5 @@ void setAutostartEnabled(bool enabled);
 QString xmlEscape(const QString &s);
 bool isUnderApplicationsFolder(const QString &execPath);
 QString quotedRegistryPath(const QString &path);
+QString quoteExecForDesktopEntry(const QString &path);
 }

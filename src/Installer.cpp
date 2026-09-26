@@ -37,6 +37,34 @@ QString quotedRegistryPath(const QString &path)
     return native;
 }
 
+QString quoteExecForDesktopEntry(const QString &path)
+{
+    // Desktop Entry Specification's Exec key: a value containing a
+    // "reserved character" must be quoted, and inside double quotes the
+    // characters '"', '`', '$' and '\' must themselves be backslash-escaped.
+    // Without this, an unquoted path with a space — an AppImage renamed or
+    // downloaded as e.g. "~/Downloads/Bing Wallpaper-1.0.0.AppImage" is the
+    // realistic case — gets split on that space by whatever parses the
+    // autostart Exec= line, and the app fails to launch at login.
+    static const QString reserved = QStringLiteral(" \t\n\"'\\><~|&;$*?#()`");
+    bool needsQuoting = false;
+    for (const QChar &c : path) {
+        if (reserved.contains(c)) {
+            needsQuoting = true;
+            break;
+        }
+    }
+    if (!needsQuoting)
+        return path;
+
+    QString escaped = path;
+    escaped.replace(QLatin1Char('\\'), QStringLiteral("\\\\"));
+    escaped.replace(QLatin1Char('"'), QStringLiteral("\\\""));
+    escaped.replace(QLatin1Char('`'), QStringLiteral("\\`"));
+    escaped.replace(QLatin1Char('$'), QStringLiteral("\\$"));
+    return QStringLiteral("\"%1\"").arg(escaped);
+}
+
 namespace {
 
 #if defined(Q_OS_MAC)
@@ -157,7 +185,7 @@ void applyAutostart(bool enabled, const QString &execPath)
         "NoDisplay=true\n"
         "X-GNOME-Autostart-enabled=true\n"
         "Name=Bing Wallpaper\n"
-        "Comment=Daily Bing Wallpaper\n").arg(execPath);
+        "Comment=Daily Bing Wallpaper\n").arg(quoteExecForDesktopEntry(execPath));
 
     QFile file(desktopFile);
     if (file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
