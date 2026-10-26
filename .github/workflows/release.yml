@@ -18,7 +18,7 @@ jobs:
           - label: linux-x86_64
             runner: ubuntu-22.04      # oldest runner = lowest glibc; AppImage needs glibc >= build host
           - label: linux-arm64
-            runner: ubuntu-22.04-arm   # native ARM64 runner — no cross-compilation
+            runner: ubuntu-24.04-arm   # Qt arm64 binaries from install-qt-action need glibc >= 2.38 (22.04 has 2.35); native ARM64, no cross-compilation
           - label: macos
             runner: macos-14
           - label: windows
