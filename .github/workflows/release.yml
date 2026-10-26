@@ -109,7 +109,7 @@ jobs:
 
       - name: List packaged artifacts
         shell: bash
-        run: ls -l *.dmg *.AppImage *.tar.gz *.exe 2>/dev/null || true
+        run: ls -l *.dmg *.AppImage *.exe 2>/dev/null || true
 
       - name: Upload release assets
         uses: svenstaro/upload-release-action@v2

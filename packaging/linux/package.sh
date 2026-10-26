@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Packages the built Linux binary into an AppImage (and a plain .tar.gz).
+# Packages the built Linux binary into an AppImage.
 # Requires `linuxdeploy` and `linuxdeploy-plugin-qt` on PATH (or in the CWD).
 # Usage: packaging/linux/package.sh [build-dir] [version]
 set -euo pipefail
@@ -31,6 +31,8 @@ cp icon/bing.png "${APPDIR}/usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png
 echo "Running linuxdeploy..."
 export QML_SOURCES_PATHS=""
 export VERSION
+# linuxdeploy and its plugins are AppImages themselves; run without needing FUSE (CI containers)
+export APPIMAGE_EXTRACT_AND_RUN=1
 NO_STRIP=1 linuxdeploy \
     --appdir "${APPDIR}" \
     --plugin qt \
@@ -38,12 +40,16 @@ NO_STRIP=1 linuxdeploy \
     --icon-file "icon/bing.png" \
     --output appimage
 
-mv "${APP_NAME}"*.AppImage "${APP_NAME}-${VERSION}-linux-${ARCH}.AppImage" 2>/dev/null || true
-
-echo "Creating tar.gz fallback..."
-TAR_DIR_NAME="${APP_NAME}-${VERSION}-linux-${ARCH}"
-rm -rf "${BUILD_DIR}/${TAR_DIR_NAME}"
-cp -r "${APPDIR}" "${BUILD_DIR}/${TAR_DIR_NAME}"
-tar -C "${BUILD_DIR}" -czf "${APP_NAME}-${VERSION}-linux-${ARCH}.tar.gz" "${TAR_DIR_NAME}"
+# linuxdeploy names the output after the .desktop `Name=` ("Bing_Wallpaper-<ver>-<arch>.AppImage"),
+# not the binary, so match case-insensitively and fail loudly instead of silently shipping no AppImage.
+APPIMAGE_OUT="$(find . -maxdepth 1 -iname 'bing*wallpaper*.AppImage' ! -name "${APP_NAME}-${VERSION}-linux-${ARCH}.AppImage" | head -n1)"
+if [ -n "${APPIMAGE_OUT}" ]; then
+    mv "${APPIMAGE_OUT}" "${APP_NAME}-${VERSION}-linux-${ARCH}.AppImage"
+fi
+if [ ! -f "${APP_NAME}-${VERSION}-linux-${ARCH}.AppImage" ]; then
+    echo "error: linuxdeploy produced no AppImage" >&2
+    exit 1
+fi
+chmod +x "${APP_NAME}-${VERSION}-linux-${ARCH}.AppImage"
 
 echo "Done."

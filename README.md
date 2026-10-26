@@ -49,7 +49,6 @@ not a sign of a broken download.
    chmod +x bing-wallpaper-*.AppImage
    ./bing-wallpaper-*.AppImage
    ```
-   (Or extract the `.tar.gz` instead and run the `bing-wallpaper` binary inside.)
 3. A tray icon requires a `StatusNotifierItem`/AppIndicator host — most desktops (GNOME
    with an extension, KDE, XFCE, Cinnamon, MATE) provide one out of the box.
 
@@ -165,7 +164,7 @@ Scripts in `packaging/` turn a Release build into a distributable package:
 
 ```sh
 packaging/macos/package.sh   build <version>   # -> bing-wallpaper-<version>-macos.dmg
-packaging/linux/package.sh   build <version>   # -> AppImage + .tar.gz (needs linuxdeploy + linuxdeploy-plugin-qt on PATH)
+packaging/linux/package.sh   build <version>   # -> AppImage (needs linuxdeploy + linuxdeploy-plugin-qt on PATH)
 ```
 
 Windows packaging needs a deployed Qt runtime tree before running Inno Setup:
