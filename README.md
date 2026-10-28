@@ -1,4 +1,5 @@
-### Bing Wallpaper [![CI](https://github.com/pyprism/Bing-Wallpaper/actions/workflows/run-tests.yaml/badge.svg)](https://github.com/pyprism/Bing-Wallpaper/actions/workflows/run-tests.yaml)
+### Bing Wallpaper [![CI](https://github.com/pyprism/Bing-Wallpaper/actions/workflows/run-tests.yaml/badge.svg)](https://github.com/pyprism/Bing-Wallpaper/actions/workflows/run-tests.yaml) ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/pyprism/Bing-Wallpaper/total)
+
 
 A native Qt 6 / C++ application that automatically sets your desktop wallpaper to the daily
 Bing image. Supports **Linux**, **macOS**, and **Windows**, and runs entirely from the
