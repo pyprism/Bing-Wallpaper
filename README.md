@@ -5,6 +5,8 @@ A native Qt 6 / C++ application that automatically sets your desktop wallpaper t
 Bing image. Supports **Linux**, **macOS**, and **Windows**, and runs entirely from the
 system tray — no dock icon, no taskbar entry, no window.
 
+![Gallery window](screenshot.png)
+
 ## Features
 
 - Fetches the latest Bing wallpaper (optionally in UHD resolution) and caches it locally
