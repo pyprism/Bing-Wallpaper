@@ -20,7 +20,7 @@ jobs:
           - label: linux-arm64
             runner: ubuntu-24.04-arm   # Qt arm64 binaries from install-qt-action need glibc >= 2.38 (22.04 has 2.35); native ARM64, no cross-compilation
           - label: macos
-            runner: macos-14
+            runner: macos-15
           - label: windows
             runner: windows-latest
 
