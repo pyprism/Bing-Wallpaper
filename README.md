@@ -18,7 +18,7 @@ system tray — no dock icon, no taskbar entry, no window.
 - Tray menu: Refresh Now, Open Gallery…, Copy Description, Previous Wallpapers (last 8 days),
   Market, Refresh Interval, Keep Wallpapers (retention), Start at Login, About, Quit
 - Desktop notification when the wallpaper changes
-- Installs via native packages and can autostart on login for all platforms (toggle from the tray menu)
+- Ships as a `.dmg` (macOS), an AppImage (Linux) and an Inno Setup installer (Windows); can autostart on login (toggle from the tray menu)
 - No Dock icon (macOS `LSUIElement`), no taskbar button (Windows/Linux), tray-only everywhere
 
 ## Installation
@@ -56,13 +56,16 @@ not a sign of a broken download.
    with an extension, KDE, XFCE, Cinnamon, MATE) provide one out of the box.
 
 On first launch the app registers autostart (see table below) — this can be turned
-off later from the tray menu's **Start at Login** checkbox.
+off later from the tray menu's **Start at Login** checkbox. On macOS, autostart is only
+registered when the app runs from `/Applications` (or `~/Applications`); launching it from
+elsewhere, e.g. straight from the mounted `.dmg`, skips it.
 
 ## Platform Install Locations
 
 | Platform | Binary | Autostart |
 |----------|--------|-----------|
-| Linux    | `~/.local/bin/bing-wallpaper` | `~/.config/autostart/bing-wallpaper.desktop` |
+| Linux (AppImage) | stays where you put the `.AppImage` (no self-copy) | `~/.config/autostart/bing-wallpaper.desktop`, `Exec=` points at the AppImage |
+| Linux (non-AppImage build) | self-installs to `~/.local/bin/bing-wallpaper` | `~/.config/autostart/bing-wallpaper.desktop` |
 | macOS    | wherever the `.app` is placed (e.g. `/Applications`) | `~/Library/LaunchAgents/com.bing-wallpaper.plist` |
 | Windows  | installer directory, normally `%ProgramFiles%\bing-wallpaper\bing-wallpaper.exe` | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` |
 
@@ -138,7 +141,7 @@ Requires **Qt 6.5+**, **CMake ≥ 3.21**, and a C++17 compiler.
 
 ### Linux
 ```sh
-sudo apt install -y qt6-base-dev libqt6svg6-dev qt6-tools-dev cmake build-essential \
+sudo apt install -y qt6-base-dev qt6-tools-dev cmake build-essential \
     libgl1-mesa-dev libxkbcommon-x11-0
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
@@ -193,9 +196,12 @@ ctest --test-dir build --output-on-failure
 ```
 
 Tests use QtTest and run headless (`QT_QPA_PLATFORM=offscreen`, no network access).
-`BingClient`'s API parsing / URL building / save-path logic is tested directly as pure
-functions; `WallpaperSetter` tests are guarded per-OS (`#ifdef Q_OS_MAC/WIN/...`) and only
-compile the tests relevant to the platform being built.
+Suites: `tst_BingClient` (API parsing, URL building, save paths, apply-gating),
+`tst_WallpaperSetter`, `tst_WallpaperLibrary` (Gallery scan/sort/retention/delete/skip-list)
+and `tst_Installer` (XML escaping, autostart guards, registry-path quoting). The
+`WallpaperSetter` string-building helpers (AppleScript, Windows style value, Linux
+desktop-group commands, file URIs) are tested on every OS; only the slots that actually call
+`setWallpaper()` are guarded per-OS (`#ifdef Q_OS_MAC/WIN/...`).
 
 ## Icon Attribution
 
